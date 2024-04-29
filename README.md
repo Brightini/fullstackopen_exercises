@@ -1,3 +1,1 @@
-# A README file
-## Zidio Web Dev Internship
-### Tasks
+The repositories contains solutions to all exercises from [fullstackopen](https://fullstackopen.com/en/)
