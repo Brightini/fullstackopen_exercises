@@ -1,6 +1,12 @@
 import personServices from "./services/persons";
 import { useState, useEffect } from "react";
 
+const Notification = ({ successMessage, errorMessage }) => {
+  if (successMessage) return <div className="success">{successMessage}</div>;
+  if (errorMessage) return <div className="error">{errorMessage}</div>;
+  return null;
+};
+
 const Filter = (props) => {
   return (
     <div>
@@ -37,8 +43,9 @@ const Person = (props) => {
           <Delete
             name={person.name}
             id={person.id}
-            setPersonss={props.setPersons}
+            setPersons={props.setPersons}
             persons={props.persons}
+            setErrorMessage={props.setErrorMessage}
           />
         </div>
       ))}
@@ -53,7 +60,11 @@ const Delete = (props) => {
       const updatePersons = props.persons.filter(
         (person) => person.id !== props.id
       );
-      props.setPerson(updatePersons);
+      props.setPersons(updatePersons);
+      props.setErrorMessage(`Deleted ${props.name}`);
+      setTimeout(() => {
+        props.setErrorMessage(null);
+      }, 3000);
     }
   };
   return (
@@ -68,6 +79,8 @@ function App() {
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filteredNames, setFilter] = useState("");
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
     personServices.getAllPersons().then((initialListOfPersons) => {
@@ -104,6 +117,10 @@ function App() {
     if (!nameExists) {
       personServices.create(nameObject).then((newPerson) => {
         setPersons(persons.concat(newPerson));
+        setSuccessMessage(`Added ${newName}`);
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 3000);
       });
     } else if (nameExists && !numberExists) {
       // To update number of existing person
@@ -122,7 +139,9 @@ function App() {
             );
           });
       }
-    } else alert(`${newName} is already added to the phonebook`);
+    } else {
+      alert(`${newName} is already added to the phonebook`);
+    }
   };
 
   const filteredPersons = persons.filter((person) =>
@@ -132,6 +151,10 @@ function App() {
   return (
     <>
       <h1>Phonebook</h1>
+      <Notification
+        successMessage={successMessage}
+        errorMessage={errorMessage}
+      />
       <Filter handleFilter={handleFilter} />
       <h3>Add a New Number</h3>
       <Form
@@ -140,7 +163,11 @@ function App() {
         handleSubmit={handleSubmit}
       />
       <h3>Numbers</h3>
-      <Person persons={filteredPersons} setPersons={setPersons} />
+      <Person
+        persons={filteredPersons}
+        setPersons={setPersons}
+        setErrorMessage={setErrorMessage}
+      />
     </>
   );
 }
