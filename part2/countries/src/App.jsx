@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const Display = ({ query, matchingCountryNames, countryData }) => {
+const DisplayCountryData = ({
+  query,
+  matchingCountryNames,
+  countryData,
+  setQuery,
+}) => {
+  const handleButton = (name) => {
+    setQuery(name);
+  };
+
   if (query && matchingCountryNames.length > 10) {
     return <p>Too many matches. Specify search query</p>;
   } else if (
@@ -11,67 +20,48 @@ const Display = ({ query, matchingCountryNames, countryData }) => {
     return (
       <ul>
         {matchingCountryNames.map((name, index) => (
-          <p key={index}>{name}</p>
+          <p key={index}>
+            {name} <button onClick={() => handleButton(name)}>show</button>
+          </p>
         ))}
       </ul>
     );
-  } else {
-    return (
-      <>
-        {countryData && (
-          <div>
-            <h1>{countryData.name}</h1>
-            <b>Capital: </b>
-            {countryData.capital}
-            <br />
-            <b>Country Area: </b>
-            {countryData.area}
-            <p>
-              <b>Languages:</b>
-            </p>
-            <ul>
-              {countryData.languages.map((language, index) => (
-                <li key={index}>{language}</li>
-              ))}
-            </ul>
-            <img
-              src={countryData.flag}
-              alt={`${countryData.name} flag`}
-              width="200"
-            />
-          </div>
-        )}
-      </>
-    );
   }
+  return (
+    <>
+      {countryData && (
+        <div>
+          <h1>{countryData.name}</h1>
+          <b>Capital: </b>
+          {countryData.capital}
+          <br />
+          <b>Country Area: </b>
+          {countryData.area}
+          <p>
+            <b>Languages:</b>
+          </p>
+          <ul>
+            {countryData.languages.map((language, index) => (
+              <li key={index}>{language}</li>
+            ))}
+          </ul>
+          <img
+            src={countryData.flag}
+            alt={`${countryData.name} flag`}
+            width="150"
+          />
+        </div>
+      )}
+    </>
+  );
 };
 
-const App = () => {
-  const [query, setQuery] = useState("");
-  const [countries, setCountries] = useState([]);
+const AllMatchingCountryDetails = ({ countries, query, setQuery }) => {
   const [matches, setMatches] = useState([]);
   const [matchingCountryNames, setMatchingCountryNames] = useState([]);
   const [countryData, setCountryData] = useState(null);
 
-  useEffect(() => {
-    axios
-      .get("https://studies.cs.helsinki.fi/restcountries/api/all")
-      .then((response) => setCountries(response.data));
-  }, []);
-
-  useEffect(() => {
-    const names = countries.map((country) => country.name.common);
-
-    if (query) {
-      const matchingNames = names.filter((name) =>
-        name.toLowerCase().includes(query.toLowerCase())
-      );
-      setMatchingCountryNames(matchingNames);
-    } else {
-      setMatchingCountryNames(names);
-    }
-  }, [query, countries]);
-
+  // This collates all details of matching countries
   useEffect(() => {
     let matchingCountries =
       query !== ""
@@ -84,9 +74,23 @@ const App = () => {
     setMatches(matchingCountries);
   }, [query]);
 
+  // This collates only the names of matching countries
   useEffect(() => {
+    const names = countries.map((country) => country.name.common);
+    if (query) {
+      const matchingNames = names.filter((name) =>
+        name.toLowerCase().includes(query.toLowerCase())
+      );
+      setMatchingCountryNames(matchingNames);
+    } else {
+      setMatchingCountryNames(names);
+    }
+  }, [query, countries]);
+
+  useEffect(() => {
+    let country;
     if (matches.length === 1) {
-      const country = matches[0];
+      country = matches[0];
       const countryInfo = {
         name: country.name.common,
         capital: country.capital[0],
@@ -100,6 +104,29 @@ const App = () => {
     }
   }, [matches]);
 
+  return (
+    <DisplayCountryData
+      query={query}
+      matchingCountryNames={matchingCountryNames}
+      countryData={countryData}
+      setQuery={setQuery}
+    />
+  );
+};
+
+const App = () => {
+  const [query, setQuery] = useState("");
+  const [countries, setCountries] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("https://studies.cs.helsinki.fi/restcountries/api/all")
+      .then((response) => setCountries(response.data))
+      .catch((error) => {
+        console.log("Error fetching country data: ", error);
+      });
+  }, []);
+
   const handleInputChange = (event) => {
     setQuery(event.target.value);
   };
@@ -108,10 +135,10 @@ const App = () => {
     <div>
       Find countries{" "}
       <input type="text" value={query} onChange={handleInputChange}></input>
-      <Display
-        matchingCountryNames={matchingCountryNames}
-        countryData={countryData}
+      <AllMatchingCountryDetails
+        countries={countries}
         query={query}
+        setQuery={setQuery}
       />
     </div>
   );
